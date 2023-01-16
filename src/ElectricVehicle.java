@@ -26,10 +26,8 @@ public class ElectricVehicle {
 
   public ElectricVehicle(String carName, double batterySize,
                          double stateOfCharge, double defaultEfficiency) {
-    // assign currentEfficiency(rated)
-    this.currentEfficiency = defaultEfficiency;
 
-    // assign batterySize
+    // assign carName
     if (carName == null || carName.length() == 0) {
       this.carName = "unknown EV";
     } else {
@@ -56,6 +54,9 @@ public class ElectricVehicle {
     else it will equal to the max one between given number or 0.5
      */
     this.defaultEfficiency = defaultEfficiency > 4.5 ? 4.5 : Math.max(defaultEfficiency, 0.5);
+
+    // assign currentEfficiency(rated)
+    this.currentEfficiency = this.defaultEfficiency;
   }
 
   /**
@@ -80,14 +81,14 @@ public class ElectricVehicle {
    */
   public void updateEfficiency(double currentTemp) {
     // avoid Math.max(1 - lostEff, 0.5) increase percent of efficiency
-    if (currentTemp < 0) {
+    if (currentTemp < 15) {
       this.currentEfficiency *= 0.5;
       return;
     }
     // if currentTemp between [65.0 77.0] we don't need to change currentEfficiency
     if (currentTemp < 65.0) {
       // percent of lost efficiency
-      double lostEff = (65 - currentTemp) * 0.01;
+      double lostEff = (65.0 - currentTemp) * 0.01;
       double remainEff = Math.max(1 - lostEff, 0.5);
       this.currentEfficiency *= remainEff;
     } else if (currentTemp > 77.0) {    //upper 77.0F -> only 85% efficiency
@@ -98,10 +99,10 @@ public class ElectricVehicle {
   /**
    * get the default efficiency.
    *
-   * @return the default efficiency of car
+   * @return current efficiency of car
    */
   public double getEfficiency() {
-    return this.defaultEfficiency;
+    return this.currentEfficiency;
   }
 
   /**
@@ -127,15 +128,15 @@ public class ElectricVehicle {
    *
    * @return the name of car
    */
-  public String getCarName() {
+  public String getName() {
     return this.carName;
   }
 
   /**
-   * set the default efficiency from external.
+   * set the default efficiency from external(extends constructor rules).
    */
   public void setStateOfCharge(double stateOfCharge) {
-    this.stateOfCharge = stateOfCharge;
+    this.stateOfCharge = stateOfCharge > 1 ? 1 : Math.max(stateOfCharge, 0.15);
   }
 
   /**
@@ -148,6 +149,8 @@ public class ElectricVehicle {
     // transfer double to format String "0.0%"
     DecimalFormat df = new DecimalFormat("0.0%");
     String outputState = df.format(this.stateOfCharge);
-    return this.carName + " SOC: " + outputState + " Range(miles): " + range();
+    DecimalFormat df2 = new DecimalFormat("0.0");
+    String outputRange = df2.format(range());
+    return this.carName + " SOC: " + outputState + " Range (miles): " + outputRange;
   }
 }
