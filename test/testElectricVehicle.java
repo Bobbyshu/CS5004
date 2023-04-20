@@ -89,7 +89,7 @@ public class testElectricVehicle {
   @Test
   public void range() {
     assertEquals(131.25, tesla.range(), 0);
-    assertEquals(675, ford.range(), 0);
+    assertEquals(675.0, ford.range(), 0);
     assertEquals(0.75, kia.range(), 0);
   }
 

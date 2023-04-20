@@ -14,6 +14,12 @@ public class ElectricVehicle {
   private double stateOfCharge;
   private double currentEfficiency;
   private final double defaultEfficiency;
+  private final int MaxBattery = 150;
+  private final int MinBattery = 10;
+  private final double MaxCharge = 1;
+  private final double MinCharge = 0.15;
+  private final double MaxEff = 4.5;
+  private final double MinEff = 0.5;
 
   /**
    * the constructor of the ElectricVehicle.
@@ -26,7 +32,6 @@ public class ElectricVehicle {
 
   public ElectricVehicle(String carName, double batterySize,
                          double stateOfCharge, double defaultEfficiency) {
-
     // assign carName
     if (carName == null || carName.length() == 0) {
       this.carName = "unknown EV";
@@ -37,26 +42,59 @@ public class ElectricVehicle {
     /*
     assign batterySize
     if battery size > 150 it will equal to 150
-    else it will equal to the max one between given number or 10
+    else it will equal to the max one for given number or 10
      */
-    this.batterySize = batterySize > 150 ? 150 : Math.max(batterySize, 10);
+    this.batterySize = generateBatterySize(batterySize);
 
     /*
     assign chargeState
     if SOC > 1 it will equal to 1
-    else it will equal to the max one between given number or 0.15
+    else it will equal to the max one for given number or 0.15
      */
-    this.stateOfCharge = stateOfCharge > 1 ? 1 : Math.max(stateOfCharge, 0.15);
+    this.stateOfCharge = generateCharge(stateOfCharge);
 
     /*
     assign defaultEfficiency
     if defaultEfficiency > 4.5 it will equal to 4.5
-    else it will equal to the max one between given number or 0.5
+    else it will equal to the max one for given number or 0.5
      */
-    this.defaultEfficiency = defaultEfficiency > 4.5 ? 4.5 : Math.max(defaultEfficiency, 0.5);
+    this.defaultEfficiency = generateDefaultEff(defaultEfficiency);
 
-    // assign currentEfficiency(rated)
+    //assign currentEfficiency(rated)
     this.currentEfficiency = this.defaultEfficiency;
+  }
+
+  /**
+   * rules for clamping batterySize.
+   *
+   * @param batterySize input number
+   * @return actual number after clamping
+   */
+  private double generateBatterySize(double batterySize) {
+    return batterySize > MaxBattery
+        ? MaxBattery : Math.max(batterySize, MinBattery);
+  }
+
+  /**
+   * rules for clamping SOC.
+   *
+   * @param stateOfCharge input number
+   * @return actual number after clamping
+   */
+  private double generateCharge(double stateOfCharge) {
+    return stateOfCharge > MaxCharge
+        ? MaxCharge : Math.max(stateOfCharge, MinCharge);
+  }
+
+  /**
+   * rules for clamping default efficiency.
+   *
+   * @param defaultEfficiency input number
+   * @return actual number after clamping
+   */
+  private double generateDefaultEff(double defaultEfficiency) {
+    return defaultEfficiency > MaxEff
+        ? MaxEff : Math.max(defaultEfficiency, MinEff);
   }
 
   /**
@@ -75,24 +113,19 @@ public class ElectricVehicle {
    * if 65F <= temperature <= 77F, it will gain 100% efficiency
    * if 15F <= temperature <= 65F, it will decrease the efficiency depends on temperature
    * However, it will gain at least 50% default efficiency
-   * So, we should choose the maximum percent.
    *
    * @param currentTemp the current temperature when driving this car
    */
   public void updateEfficiency(double currentTemp) {
-    // avoid Math.max(1 - lostEff, 0.5) increase percent of efficiency
-    if (currentTemp < 15) {
-      this.currentEfficiency *= 0.5;
-      return;
-    }
-    // if currentTemp between [65.0 77.0] we don't need to change currentEfficiency
-    if (currentTemp < 65.0) {
-      // percent of lost efficiency
-      double lostEff = (65.0 - currentTemp) * 0.01;
-      double remainEff = Math.max(1 - lostEff, 0.5);
-      this.currentEfficiency *= remainEff;
-    } else if (currentTemp > 77.0) {    //upper 77.0F -> only 85% efficiency
-      this.currentEfficiency *= 0.85;
+    // distribute value by different temperature
+    if (currentTemp > 77.0) { // (77.0, maximum)
+      this.currentEfficiency = 0.85 * this.defaultEfficiency;
+    } else if (currentTemp >= 65.0) { // [65.0, 77.0]
+      this.currentEfficiency = this.defaultEfficiency;
+    } else {
+      // set the maximum lostEffi cuz efficiency can't lose over 50%
+      double lostEffi = Math.min(65.0 - currentTemp, 50.0);
+      this.currentEfficiency = (1.0 - (lostEffi / 100)) * this.defaultEfficiency;
     }
   }
 
@@ -136,7 +169,8 @@ public class ElectricVehicle {
    * set the default efficiency from external(extends constructor rules).
    */
   public void setStateOfCharge(double stateOfCharge) {
-    this.stateOfCharge = stateOfCharge > 1 ? 1 : Math.max(stateOfCharge, 0.15);
+    this.stateOfCharge = stateOfCharge > MaxCharge
+        ? MaxCharge : Math.max(stateOfCharge, MinCharge);
   }
 
   /**
